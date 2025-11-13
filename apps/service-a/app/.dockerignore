@@ -1,0 +1,20 @@
+# Git files
+.git
+.gitignore
+.gihub
+# Python cache
+__pycache__/
+*.pyc
+
+# Local environment files
+.env
+*.env
+
+# Test files
+tests/
+
+# Docker compose files
+docker-compose.yml
+
+# READMEs, etc.
+*.md

@@ -1,0 +1,81 @@
+# ────────────────────────────────────────────────────────────────
+# SECURITY NOTE — Protect your .env file
+# Run these commands before bringing up the stack:
+#   sudo chown $USER:$USER .env
+#   chmod 600 .env
+# ────────────────────────────────────────────────────────────────
+
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: api-service:local
+    container_name: api-service
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env # Load environment variables from a .env file
+    # This demonstrates how service-a can find the other services
+    # using their service names as hostnames (DNS).
+    depends_on: 
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-net
+  
+  # Postgresql Database
+  db:
+    image: postgres:10-alpine
+    restart: always
+    # set shared memory limit when using docker compose
+    shm_size: 128mb
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    depends_on: 
+      redis:
+        condition: service_healthy
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app-net
+
+# Redis cache
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - db-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app-net
+# Define Named Volume for Data Persistence
+volumes:
+  db-data:
+# Define Network Addresses
+networks:
+  app-net:
+    ipam:
+      driver: default
+      config:
+          - subnet: 172.28.0.0/16
+            ip_range: 172.28.0.0/24
+    
+
